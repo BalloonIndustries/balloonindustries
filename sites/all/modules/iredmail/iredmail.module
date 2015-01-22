@@ -1,0 +1,97 @@
+<?php
+
+/**
+ * Implements hook_menu().
+ */
+function iredmail_menu() {
+  $items = array();
+
+  $items['admin/mail'] = array(
+    'title' => 'IRedmail',
+    'description' => 'Configure settings for IRedmail',
+    'page callback' => 'iredmail_admin_menu',
+    'access arguments' => array('administer site configuration'),
+  );
+  $items['admin/mail/create'] = array(
+    'title' => 'Create new IRedmail Address or Forward',
+    "description" => "Create new IRedmail Address or Forward",
+    "page callback" => 'drupal_get_form',
+    'page arguments' => array('iredmail_create'),
+    'access arguments' => array('administer site configuration'),
+  );
+
+  return $items;
+}
+
+function iredmail_create() {
+  $form = array();
+  $form['iredmail_address'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Email Address'),
+    '#default_value' => '',
+    '#required' => TRUE,
+  );
+  $form['iredmail_forward'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Forwarding Address'),
+    '#default_value' => '',
+    //'#markup' => t("Leave blank to create address"), // Enable when adding email addresses has been confirmed
+    '#required' => TRUE,
+  );
+  $form['iredmail_submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save Address or Forward'),
+    '#submit' => array('iredmail_save'),
+  );
+  return $form;
+}
+
+function iredmail_save($form, &$form_state) {
+  // add created date, modified date to this, combine with table on previous page
+  // Format $forward so that you can either add item or several items
+
+  $address = $form['iredmail_address']['#value'];
+  $forward = $form['iredmail_forward']['#value'];
+  $domain = substr($address, strpos($address, "@") + 1);
+
+  db_set_active("vmail");
+  try {
+    db_update("alias")
+        ->fields(array(
+          "address" => $address,
+          "goto" => $forward,
+          "name" => '',
+          "domain" => $domain,
+        ))
+        ->condition("address", $address, "=")
+        ->execute();
+  }
+  catch (PDOException $e) {
+    drupal_set_message(t('Error: %message', array('%message' => $e->getMessage())), 'error');
+  }
+  db_set_active();
+}
+
+function iredmail_admin_menu() {
+  $output = l("Create new address or forward", "admin/mail/create", array());
+  db_set_active("vmail");
+  $menu_items = db_query("SELECT * FROM alias")->fetchAll();
+  db_set_active();
+  $header = array('Address', 'Forward', 'Name', 'Domain');
+  $rows = array();
+  if (!empty($menu_items)) {
+    foreach ($menu_items as $menu_item) {
+      $rows[] = array($menu_item->address, $menu_item->goto, $menu_item->name, $menu_item->domain);
+    }
+  }
+  $output .= theme("table", array(
+    "header" => $header,
+    "rows" => $rows,
+    "sticky" => true,
+    "caption" => "",
+    "colgroups" => array(),
+    "empty" => t("Table has no rows"),
+      )
+  );
+  return $output;
+}

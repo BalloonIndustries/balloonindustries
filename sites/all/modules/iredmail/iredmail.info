@@ -1,0 +1,4 @@
+name = IRedMail Connector
+description = Connects to IRedMail Database to allow non-technical users to create new accounts and email forwards
+package = iredmail
+core = 7.x

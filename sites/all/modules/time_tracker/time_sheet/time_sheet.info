@@ -1,0 +1,11 @@
+name = Time Sheet
+description = Provides time sheet functionality for extra accountability.
+package = Time Tracker
+core = 7.x
+dependencies[] = time_tracker
+; Information added by Drupal.org packaging script on 2015-01-09
+version = "7.x-1.3"
+core = "7.x"
+project = "time_tracker"
+datestamp = "1420843685"
+
